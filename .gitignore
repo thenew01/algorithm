@@ -3,4 +3,4 @@ debug
 *.ncb
 *.suo
 *.sln
-*.vcproj-*
+*.vcproj.*
