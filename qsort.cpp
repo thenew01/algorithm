@@ -40,11 +40,11 @@ void qsort(int a[], int n)
 }
 
 
-int a[10], book[10],total = 0;
+int a[10], book[10], n = 9, total = 0;
 void deepFirstSearch(int step)
 {
 	int i;
-	if( step == 10 )
+	if( step == n+1 )
 	{
 		if( a[1] * 100 + a[2] * 10 + a[3] + 
 			a[4] * 100 + a[5] * 10 + a[6] == 
@@ -56,7 +56,7 @@ void deepFirstSearch(int step)
 		return;
 	}
 
-	for ( i = 1;i <= 9; i++)
+	for ( i = 1;i <= n; i++)
 	{
 		if( book[i] ==0 )
 		{
@@ -85,17 +85,19 @@ int main()
 		printf("%d ", ar[i]);
 	}*/
 
-	//deepFirstSearch(1);
-	//printf("total:%d", total/2);
+	deepFirstSearch(1);
+	printf("total:%d", total/2);
 	puts("\n");
 
 
-	PointEx start(1, 1);
-	PointEx end(6, 8);
+	
+	// A*搜索 [4/12/2018 wei]	
 	/*
 	* 第一个问题：起点FGH需要初始化吗？
 	* 看参考资料的图片发现不需要
 	*/
+	/*PointEx start(1, 1);
+	PointEx end(6, 8);
 	stack<PointEx*>* stack = AStarPathFind::printPath(start, end);
 	if(NULL==stack) 
 	{
@@ -111,8 +113,10 @@ int main()
 			delete pt;
 		}
 	}
+	*/
 
 	getchar();
+	
 
     return 0;
 }
