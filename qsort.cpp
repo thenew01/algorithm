@@ -2,7 +2,8 @@
 //
 
 #include "stdafx.h"
-
+#include <WTypes.h>
+#include <winbase.h>
 /*
  *author: booirror@163.com
  *date: 2015/4/28
@@ -22,7 +23,7 @@ void swap(int a[], int n, int m)
 	a[n] = a[m];
 	a[m] = tmp;
 }
-
+//没有二分，哪里是quick sort了？
 void qsort(int a[], int n)
 {
 	int i, j;
@@ -56,7 +57,7 @@ void deepFirstSearch(int step)
 		return;
 	}
 
-	for ( i = 1;i <= n; i++)
+	for ( i = 1;i <= n; i++) //没有用0号索引
 	{
 		if( book[i] ==0 )
 		{
@@ -96,8 +97,10 @@ int main()
 	* 第一个问题：起点FGH需要初始化吗？
 	* 看参考资料的图片发现不需要
 	*/
-	/*PointEx start(1, 1);
-	PointEx end(6, 8);
+	DWORD dwBegin = GetTickCount();
+
+	PointEx start(1, 1);
+	PointEx end(160, 51);
 	stack<PointEx*>* stack = AStarPathFind::printPath(start, end);
 	if(NULL==stack) 
 	{
@@ -113,7 +116,9 @@ int main()
 			delete pt;
 		}
 	}
-	*/
+
+	printf("\n\ntime:%dMS", GetTickCount() - dwBegin);
+	
 
 	getchar();
 	

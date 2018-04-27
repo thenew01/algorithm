@@ -5,7 +5,9 @@
 #include <string>
 #include <algorithm>
 #include <queue>
+#include <map>
 using namespace std;
+
 
 class PointEx
 {
@@ -15,6 +17,10 @@ public:
 	PointEx* parent;
 	int F, G, H;
 
+	int visited;
+	int inOpen;
+	int inClosed;
+
 	PointEx(int x, int y) 
 	{		
 		this->x = x;
@@ -23,6 +29,9 @@ public:
 		G = 0;
 		H = 0;
 		parent = NULL;
+		visited = 0;
+		inOpen = 0;
+		inClosed = 0;
 	}
 
 
@@ -35,7 +44,12 @@ public:
 	{
 		return equals(*pt);
 	}
+	bool operator()(const PointEx& pt)
+	{
+		return equals(pt);
+	}
 
+	
 	int compareTo(PointEx o) {
 		// TODO Auto-generated method stub
 		return F  - o.F;
@@ -60,12 +74,19 @@ public:
 	}
 };
 
+//class lessPointEx
+//{
+//	bool operator()(const PointEx& left, const PointEx& right)
+//	{
+//		return left < right;
+//	}
+//};
 
 class AStarPathFind
 {
 	static int dx[];
 	static int dy[];
-	static int map[][15];
+	static int mapInfo[][53];
 public:
 	AStarPathFind()
 	{	
