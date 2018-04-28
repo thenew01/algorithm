@@ -267,16 +267,16 @@ stack<PointEx*>* AStarPathFind::printPath(PointEx start, PointEx end)
 	while(flag) 
 	{
 		
-#if USE_HEAP
-		nodeInfo_map_openTable.erase(*currentPoint);	
-		nodeInfo_map_closeTable[*currentPoint] = currentPoint;
-
+#if USE_HEAP		
 		/*currentPoint = pri_queue.top();
 		pri_queue.pop();		*/
 
 		pop_heap(vec_points.begin(), vec_points.end(), GreaterFScore);
 		currentPoint = vec_points.back();
 		vec_points.pop_back();
+
+		nodeInfo_map_openTable.erase(*currentPoint);	
+		nodeInfo_map_closeTable[*currentPoint] = currentPoint;
 
 #else
 		openTable_map.erase(*currentPoint);
