@@ -13,6 +13,17 @@ bool operator<(const PointEx& left, const PointEx& right)
 	else if( left.x < right.x ) return true;
 	else return false;
 }
+
+class comparePoint
+{
+public:
+	bool operator() (PointEx* left, PointEx* right)
+	{
+		return (left->F > right->F);
+		
+	}
+};
+
 bool GreaterFScore(const PointEx *pLhs, const PointEx *pRhs)
 {
 	return pLhs->F > pRhs->F;
@@ -193,13 +204,12 @@ int AStarPathFind::mapInfo[][53] = {
 	{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 } 
 };
 
-#define USE_HEAP 0
+#define USE_HEAP 1
 #define USE_multimap 0
 
 
 stack<PointEx*>* AStarPathFind::printPath(PointEx start, PointEx end) 
 {
-
 	for( int j=150;j<162;j++)
 	{
 		for ( int i=44;i<53;i++)
@@ -214,21 +224,30 @@ stack<PointEx*>* AStarPathFind::printPath(PointEx start, PointEx end)
 	* 不用PriorityQueue是因为必须取出存在的元素
 	*/
 
-	//deque<PointEx*> openTable;
-	//deque<PointEx*> closeTable;
-	//openTable.clear();
-	//closeTable.clear();
-	
+	stack<PointEx*>* pathStack = new stack<PointEx*>;
+	start.parent = NULL;
+
+	//该点起到转换作用，就是当前扩展点
+	PointEx* currentPoint = new PointEx(start.x, start.y);
+	PointEx* pEnd = new PointEx(end.x, end.y);
+
 	int size = sizeof(mapInfo)/sizeof(mapInfo[0][0]);
 #if USE_HEAP	
-	vector<PointEx*> openTable;
-	vector<PointEx*> closeTable;
-	openTable.reserve(size);
-	closeTable.reserve(size);
-
 	map<PointEx, PointEx*> nodeInfo_map_openTable;
 	map<PointEx, PointEx*> nodeInfo_map_closeTable;
 
+	nodeInfo_map_openTable[*currentPoint] = currentPoint;
+
+
+	vector<PointEx*> vec_points;
+	vec_points.reserve(size);
+	make_heap(vec_points.begin(), vec_points.end(), GreaterFScore);
+
+	vec_points.push_back(currentPoint);
+	push_heap(vec_points.begin(), vec_points.end(), GreaterFScore);
+
+	/*priority_queue<PointEx*, vector<PointEx*>, comparePoint> pri_queue;
+	pri_queue.push(currentPoint);*/
 #else
 
 #if USE_multimap
@@ -237,30 +256,48 @@ stack<PointEx*>* AStarPathFind::printPath(PointEx start, PointEx end)
 #else
 	map<PointEx, PointEx*> openTable_map;
 	map<PointEx, PointEx*> closeTable_map;
+	
+	openTable_map[*currentPoint] = currentPoint;	
 #endif
 	
 #endif
-	stack<PointEx*>* pathStack = new stack<PointEx*>;
-	start.parent = NULL;
 	
-	//该点起到转换作用，就是当前扩展点
-	PointEx* currentPoint = new PointEx(start.x, start.y);
-	PointEx* pEnd = new PointEx(end.x, end.y);
-
-	//closeTable.add(currentPoint);
 	bool flag = true;
-
-	
-	int map_closed[161][53] = {0,};
 
 	while(flag) 
 	{
+		
+#if USE_HEAP
+		nodeInfo_map_openTable.erase(*currentPoint);	
+		nodeInfo_map_closeTable[*currentPoint] = currentPoint;
+
+		/*currentPoint = pri_queue.top();
+		pri_queue.pop();		*/
+
+		pop_heap(vec_points.begin(), vec_points.end(), GreaterFScore);
+		currentPoint = vec_points.back();
+		vec_points.pop_back();
+
+#else
+		openTable_map.erase(*currentPoint);
+		closeTable_map.insert(pair<PointEx, PointEx*>(*currentPoint, currentPoint));
+
+		if(!openTable_map.empty()) 
+		{
+			currentPoint = openTable_map.begin()->second;
+			openTable_map.erase( openTable_map.begin() );
+		}
+#endif
 		for (int i = 0; i < 8; i++) 
 		{
 			int fx = currentPoint->x + dx[i];
 			int fy = currentPoint->y + dy[i];
 
 			PointEx* tempPoint = new PointEx(fx,fy); //这里是重新构造的，所以是否在closeset里的信息丢失了
+			//PointEx* tempPoint = &points[fx][fy];
+			//tempPoint->x = fx;
+			//tempPoint->y = fy;
+
 			if (mapInfo[fx][fy] == 1) 
 			{
 				// 由于边界都是1中间障碍物也是1，，这样不必考虑越界和障碍点扩展问题
@@ -277,14 +314,6 @@ stack<PointEx*>* AStarPathFind::printPath(PointEx start, PointEx end)
 					break;
 				}
 
-				//if( tempPoint->visited == 1 )
-				//	continue;
-
-				////tempPoint->visited = 1;
-				
-				if( map_closed[fx][fy] == 1 ) //在closeset中
-					continue;
-
 				if(i<4) 
 				{
 					tempPoint->G = currentPoint->G + 10;
@@ -300,10 +329,9 @@ stack<PointEx*>* AStarPathFind::printPath(PointEx start, PointEx end)
 				//这一点是使用java封装好类的关键
 				//if(openTable.contains(tempPoint)) 
 #if USE_HEAP
-				map<PointEx, PointEx*>::iterator itClosed = nodeInfo_map_closeTable.find(*tempPoint);
-				//vector<PointEx*>::iterator it = find_if(openTable.begin(), openTable.end(), *tempPoint);
-				//vector<PointEx*>::iterator itClosed = find_if(closeTable.begin(), closeTable.end(), *tempPoint);
+				map<PointEx, PointEx*>::iterator itClosed = nodeInfo_map_closeTable.find(*tempPoint);				
 				if( itClosed != nodeInfo_map_closeTable.end() )
+				//if( map_closed[fx][fy] == 1 )
 				{
 					//int pos = closeTable.indexOf(tempPoint );
 					//Point temp = closeTable.get(pos);
@@ -313,11 +341,8 @@ stack<PointEx*>* AStarPathFind::printPath(PointEx start, PointEx end)
 						//closeTable.remove(pos);
 						//openTable.add(tempPoint);
 						 
-						nodeInfo_map_closeTable.erase(itClosed);
-
-						//openTable.push_back(tempPoint);
-						//push_heap(openTable.begin(), openTable.end(), GreaterFScore);
-						///tempPoint->parent = currentPoint;
+						//nodeInfo_map_closeTable.erase(itClosed);
+						//nodeInfo_map_openTable[*tempPoint] = tempPoint;
 					}
 					else
 					{
@@ -325,8 +350,7 @@ stack<PointEx*>* AStarPathFind::printPath(PointEx start, PointEx end)
 					}
 				}
 
-				map<PointEx, PointEx*>::iterator it = nodeInfo_map_openTable.find(*tempPoint);
-				//map<PointEx, PointEx*>::iterator it = openTable.find(*tempPoint); //find_if(openTable.begin(), openTable.end(), *tempPoint);
+				map<PointEx, PointEx*>::iterator it = nodeInfo_map_openTable.find(*tempPoint);				
 				if( it != nodeInfo_map_openTable.end())
 				{           
 					//int pos = openTable.indexOf(tempPoint );
@@ -338,18 +362,45 @@ stack<PointEx*>* AStarPathFind::printPath(PointEx start, PointEx end)
 						//openTable.add(tempPoint);						
 
 						nodeInfo_map_openTable.erase(it);
-						//nodeInfo_map_openTable[*tempPoint] = tempPoint;
+						nodeInfo_map_openTable[*tempPoint] = tempPoint;						
+						
+						//下面的代码修改了F，而比较函数用的是F，导致priority_queue的F值可能不再符合堆性质
+						/*temp->F = tempPoint->F;					
+						temp->H = tempPoint->H;
+						temp->G = tempPoint->G;						
+						temp->parent = currentPoint;		*/
 
-						openTable.push_back(tempPoint);
-						push_heap(openTable.begin(), openTable.end(), GreaterFScore);
-						tempPoint->parent = currentPoint;
+						//无法直接删除中间的元素，只能线性查找删除，又会导致性能下降。删除后不符合堆性质，只能重建堆？
+						//pop_heap(vec_points.begin(), vec_points.end(), GreaterFScore);
+						//vec_points.pop_back();
+
+						//vector<PointEx*>::iterator it0, it1, it00;
+						//it00 = it0 = find_if(vec_points.begin(), vec_points.end(), *tempPoint);
+						//if( it0 != vec_points.end() ) 
+						//{
+						//	it1 = vec_points.erase(it0);
+						//	//merge(vec_points.begin(), it00, it1, vec_points.end(), vec_points.begin() );
+						//	//pop_heap(vec_points.begin(), vec_points.end(), GreaterFScore);
+						//	make_heap(vec_points.begin(), vec_points.end(), GreaterFScore);
+						//}
+
+						//vec_points.push_back(tempPoint);
+						//push_heap(vec_points.begin(), vec_points.end(), GreaterFScore);
+						
+						tempPoint->parent = currentPoint;						
 					}
 				}
 				else
 				{
 					//openTable.add(tempPoint);
-					openTable.push_back(tempPoint);
-					push_heap(openTable.begin(), openTable.end(), GreaterFScore);
+
+					nodeInfo_map_openTable[*tempPoint] = tempPoint;
+
+					//pri_queue.push(tempPoint);
+
+					vec_points.push_back(tempPoint);
+					push_heap(vec_points.begin(), vec_points.end(), GreaterFScore);
+
 					tempPoint->parent = currentPoint;
 				}
 #else			
@@ -391,7 +442,7 @@ stack<PointEx*>* AStarPathFind::printPath(PointEx start, PointEx end)
 					//Point temp = openTable.get(pos);
 					 
 					PointEx* temp = it->second;
-					if( tempPoint->F < temp->F ) 
+					if( tempPoint->F < temp->F ) 					
 					{
 						//openTable.remove(pos);
 						//openTable.add(tempPoint);
@@ -401,8 +452,8 @@ stack<PointEx*>* AStarPathFind::printPath(PointEx start, PointEx end)
 						// tempPoint->parent = currentPoint;
 						
 						temp->F = tempPoint->F;					
-						temp->H = currentPoint->H;
-						temp->G = currentPoint->G;						
+						temp->H = tempPoint->H;
+						temp->G = tempPoint->G;						
 						temp->parent = currentPoint;						
 					}
 				}
@@ -410,17 +461,15 @@ stack<PointEx*>* AStarPathFind::printPath(PointEx start, PointEx end)
 				{
 					//openTable.add(tempPoint);
 					//openTable_map[*tempPoint] = tempPoint;
-					openTable_map.insert( std::pair<PointEx, PointEx*>(*tempPoint, tempPoint));
+					openTable_map.insert( std::pair<PointEx, PointEx*>(*tempPoint, tempPoint));					
 					tempPoint->parent = currentPoint;
-					tempPoint->inOpen = 1;
-					tempPoint->inClosed = 0;
 				}
 #endif
 			}
 		}//end for
 
 #if USE_HEAP
-		if( openTable.empty() )
+		if( nodeInfo_map_openTable.empty() )
 #else
 		if(openTable_map.empty()) 
 #endif
@@ -432,50 +481,7 @@ stack<PointEx*>* AStarPathFind::printPath(PointEx start, PointEx end)
 			break;
 		}//找到路径
 		
-		//openTable.remove(currentPoint);
-		//closeTable.add(currentPoint);
-		//Collections.sort(openTable);
-		//currentPoint = openTable.get(0);		
-		
-		//deque<PointEx*>::iterator it = find_if(openTable.begin(), openTable.end(), *currentPoint);
-		//if( it != openTable.end() )
-		//	openTable.erase(it);
-		//remove_if(openTable.begin(), openTable.end(), *currentPoint);
-		//closeTable.push_back(currentPoint);
-		//currentPoint = openTable.front();
-		//openTable.pop_front();
-#if USE_HEAP
-		pop_heap(openTable.begin(), openTable.end(), GreaterFScore);
-		currentPoint = openTable.back();
-		openTable.pop_back();
-
-		/*vector<PointEx*>::iterator it = openTable.begin();
-		for ( ; it != openTable.end(); it++)
-		{
-			PointEx* pt = (PointEx*)*it;
-			printf("(%d,%d,[%d]) ", pt->x, pt->y, pt->F);
-		}
-		printf("\n");
-		*/
-		
-		nodeInfo_map_openTable.erase(*currentPoint);	
-		nodeInfo_map_closeTable[*currentPoint] = currentPoint;
-#else
-		openTable_map.erase(*currentPoint);
-		
-		map_closed[currentPoint->x][currentPoint->y] = 1;
-		currentPoint->inClosed = 1;
-		currentPoint->inOpen = 0;
-		closeTable_map.insert(pair<PointEx, PointEx*>(*currentPoint, currentPoint));
-		
-
-		if(!openTable_map.empty()) 
-		{
-			currentPoint = openTable_map.begin()->second;
-			openTable_map.erase( openTable_map.begin() );
-			currentPoint->inOpen = 0;
-		}
-#endif
+	
 	}//end while
 	PointEx* node = pEnd;
 	while(node->parent!=NULL) 

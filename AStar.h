@@ -17,9 +17,14 @@ public:
 	PointEx* parent;
 	int F, G, H;
 
-	int visited;
+	int canGo;
 	int inOpen;
 	int inClosed;
+
+	PointEx()
+	{
+		memset(this, 0, sizeof(*this));
+	}
 
 	PointEx(int x, int y) 
 	{		
@@ -29,7 +34,7 @@ public:
 		G = 0;
 		H = 0;
 		parent = NULL;
-		visited = 0;
+		this->canGo = 0;
 		inOpen = 0;
 		inClosed = 0;
 	}
