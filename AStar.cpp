@@ -204,7 +204,7 @@ int AStarPathFind::mapInfo[][53] = {
 	{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 } 
 };
 
-#define USE_HEAP 1
+#define USE_HEAP 0
 #define USE_multimap 0
 
 
